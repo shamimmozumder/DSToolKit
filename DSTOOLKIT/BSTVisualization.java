@@ -2,6 +2,7 @@ import java.util.*;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.geom.RoundRectangle2D;
 
 public class BSTVisualization extends JFrame implements ActionListener {
     // Tree Root Node.
@@ -16,24 +17,89 @@ public class BSTVisualization extends JFrame implements ActionListener {
     private JLabel labelInorder, labelPreorder, labelPostorder;
     private JLabel ansInorder, ansPreorder, ansPostorder;
     private FontMetrics fontMatrix;
+    private javax.swing.Timer animationTimer;
+    private boolean isAnimating = false;
 
     // Node Structure
     private static class Node {
         static int TEXT_WIDTH = 40;
         static int TEXT_HEIGHT = 40;
 
-        JLabel data;
+        NodePanel data;
         Node left;
         Node right;
         Points p;
+        boolean isRoot = false;
+        Color nodeColor;
 
-        Node(int info) {
-            data = new JLabel(info + "", SwingConstants.CENTER);
-            data.setFont(new Font("Arial", Font.BOLD, 20));
-            data.setBorder(BorderFactory.createLineBorder(Color.ORANGE));
-            data.setOpaque(true);
-            data.setBackground(Color.ORANGE);
+        Node(int info, boolean isRoot) {
+            this.isRoot = isRoot;
+            nodeColor = isRoot ? new Color(255, 100, 100) : new Color(100, 200, 255);
+            data = new NodePanel(info + "", nodeColor);
             p = null;
+        }
+    }
+
+    // Custom panel for nodes with rounded corners and gradient
+    private static class NodePanel extends JPanel {
+        private String text;
+        private Color bgColor;
+
+        public NodePanel(String text, Color bgColor) {
+            this.text = text;
+            this.bgColor = bgColor;
+            setOpaque(false);
+            setFont(new Font("Arial", Font.BOLD, 20));
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            Graphics2D g2d = (Graphics2D) g.create();
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            int width = getWidth();
+            int height = getHeight();
+            RoundRectangle2D roundedRectangle = new RoundRectangle2D.Float(0, 0, width, height, 20, 20);
+
+            // Gradient background
+            GradientPaint gradient = new GradientPaint(0, 0, bgColor.brighter(), 0, height, bgColor.darker());
+            g2d.setPaint(gradient);
+            g2d.fill(roundedRectangle);
+
+            // Border
+            g2d.setColor(bgColor.darker());
+            g2d.setStroke(new BasicStroke(2));
+            g2d.draw(roundedRectangle);
+
+            // Text
+            g2d.setColor(Color.WHITE);
+            FontMetrics fm = g2d.getFontMetrics();
+            int textWidth = fm.stringWidth(text);
+            int textHeight = fm.getHeight();
+            int x = (width - textWidth) / 2;
+            int y = (height + textHeight / 2) / 2;
+            g2d.drawString(text, x, y);
+
+            g2d.dispose();
+        }
+
+        public void setText(String text) {
+            this.text = text;
+            repaint();
+        }
+
+        public String getText() {
+            return text;
+        }
+
+        public void setBgColor(Color bgColor) {
+            this.bgColor = bgColor;
+            repaint();
+        }
+
+        public Color getBgColor() {
+            return bgColor;
         }
     }
 
@@ -56,7 +122,8 @@ public class BSTVisualization extends JFrame implements ActionListener {
     public void paint(Graphics g) {
         super.paintComponents(g);
         g2 = (Graphics2D) g;
-        g2.setStroke(new BasicStroke(3.0f));
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setStroke(new BasicStroke(3.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 
         Stack<Node> s = new Stack<>();
         Node curr = root;
@@ -70,8 +137,26 @@ public class BSTVisualization extends JFrame implements ActionListener {
             if (!s.isEmpty())
                 curr = s.pop();
             pts = curr.p;
-            g2.drawLine(pts.x1 + 7, pts.y1 + 30 + offset, pts.x2 + 3, pts.y2 + 10 + offset);
+            if (pts != null && pts.x1 != 0 && pts.y1 != 0) {
+                // Draw gradient line
+                GradientPaint gradient = new GradientPaint(pts.x1 + 7, pts.y1 + 30 + offset, Color.BLUE,
+                        pts.x2 + 3, pts.y2 + 10 + offset, Color.CYAN);
+                g2.setPaint(gradient);
+                g2.drawLine(pts.x1 + 7, pts.y1 + 30 + offset, pts.x2 + 3, pts.y2 + 10 + offset);
+            }
             curr = curr.right;
+        }
+
+        // Draw root indicator
+        if (root != null) {
+            g2.setColor(Color.RED);
+            g2.setFont(new Font("Arial", Font.BOLD, 16));
+            FontMetrics fm = g2.getFontMetrics();
+            String rootText = "ROOT";
+            int textWidth = fm.stringWidth(rootText);
+            int x = root.data.getX() + root.data.getWidth() / 2 - textWidth / 2;
+            int y = root.data.getY() - 10;
+            g2.drawString(rootText, x, y);
         }
     }
 
@@ -197,11 +282,16 @@ public class BSTVisualization extends JFrame implements ActionListener {
 
     // Add element in BST.
     public void add(int info) {
-        Node newNode = new Node(info);
+        if (isAnimating) return; // Prevent adding during animation
+
+        Node newNode = new Node(info, false);
         int width = getWidth(newNode);
 
         if (root == null) {
             root = newNode;
+            newNode.isRoot = true;
+            newNode.nodeColor = new Color(255, 100, 100);
+            newNode.data.setBgColor(newNode.nodeColor);
             newNode.data.setBounds(treePanel.getBounds().width / 2, 10, width, 40);
             newNode.p = new Points(0, 0, 0, 0);
         } else {
@@ -215,7 +305,7 @@ public class BSTVisualization extends JFrame implements ActionListener {
                     JOptionPane.showMessageDialog(null, info + " already exists.");
                     return;
                 } else if (currData > info) {
-                    curr = curr.left; 
+                    curr = curr.left;
                 } else {
                     curr = curr.right;
                 }
@@ -228,17 +318,24 @@ public class BSTVisualization extends JFrame implements ActionListener {
             Dimension preDimension = pre.data.getSize();
             Dimension currDimension = new Dimension(width, Node.TEXT_HEIGHT);
             //Node connection
+            int finalX, finalY;
             if (currData > info) {
                 pre.left = newNode;
-                newNode.data.setBounds(x - X, y + Y, width, 40);
-                newNode.p = new Points(x, y + preDimension.height / 2, x - X + currDimension.width / 2,
-                        y + Y + currDimension.height / 2);
+                finalX = x - X;
+                finalY = y + Y;
+                newNode.p = new Points(x, y + preDimension.height / 2, finalX + currDimension.width / 2,
+                        finalY + currDimension.height / 2);
             } else {
                 pre.right = newNode;
-                newNode.data.setBounds(x + X, y + Y, width, 40);
+                finalX = x + X;
+                finalY = y + Y;
                 newNode.p = new Points(x + preDimension.width, y + preDimension.height / 2,
-                        x + X + currDimension.width / 2, y + Y + currDimension.height / 2);
+                        finalX + currDimension.width / 2, finalY + currDimension.height / 2);
             }
+
+            // Start animation from parent position
+            newNode.data.setBounds(x + preDimension.width / 2 - width / 2, y + preDimension.height / 2 - 20, width, 40);
+            animateNode(newNode, finalX, finalY);
         }
 
         // Add the new node to the tree panel
@@ -252,7 +349,42 @@ public class BSTVisualization extends JFrame implements ActionListener {
         updateTraversalDisplays();
     }
 
+    private void animateNode(Node node, int finalX, int finalY) {
+        isAnimating = true;
+        int startX = node.data.getX();
+        int startY = node.data.getY();
+        int steps = 20;
+        int delay = 50; // milliseconds
+
+        animationTimer = new javax.swing.Timer(delay, new ActionListener() {
+            int step = 0;
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                step++;
+                double progress = (double) step / steps;
+                int currentX = (int) (startX + (finalX - startX) * progress);
+                int currentY = (int) (startY + (finalY - startY) * progress);
+
+                node.data.setBounds(currentX, currentY, node.data.getWidth(), node.data.getHeight());
+                treePanel.repaint();
+                repaint();
+
+                if (step >= steps) {
+                    animationTimer.stop();
+                    isAnimating = false;
+                    node.data.setBounds(finalX, finalY, node.data.getWidth(), node.data.getHeight());
+                    treePanel.repaint();
+                    repaint();
+                }
+            }
+        });
+        animationTimer.start();
+    }
+
     public void search(int info) {
+        // Reset all node colors first
+        resetNodeColors(root);
+
         Node curr = root;
         boolean found = false;
 
@@ -260,8 +392,8 @@ public class BSTVisualization extends JFrame implements ActionListener {
         while (curr != null) {
             int currData = Integer.parseInt(curr.data.getText());
             if (currData == info) {
-                // Node found, highlight it
-                curr.data.setBackground(Color.GREEN);
+                // Node found, highlight it with animation
+                animateHighlight(curr, Color.GREEN);
                 found = true;
                 break;
             } else if (currData > info) {
@@ -276,8 +408,37 @@ public class BSTVisualization extends JFrame implements ActionListener {
         }
     }
 
+    private void resetNodeColors(Node node) {
+        if (node == null) return;
+        node.data.setBgColor(node.nodeColor);
+        resetNodeColors(node.left);
+        resetNodeColors(node.right);
+    }
+
+    private void animateHighlight(Node node, Color highlightColor) {
+        Color originalColor = node.data.getBgColor();
+        javax.swing.Timer highlightTimer = new javax.swing.Timer(100, new ActionListener() {
+            int count = 0;
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                count++;
+                if (count % 2 == 1) {
+                    node.data.setBgColor(highlightColor);
+                } else {
+                    node.data.setBgColor(originalColor);
+                }
+                if (count >= 6) { // Blink 3 times
+                    ((javax.swing.Timer) e.getSource()).stop();
+                    node.data.setBgColor(highlightColor);
+                }
+            }
+        });
+        highlightTimer.start();
+    }
+
     private int getWidth(Node node) {
-        fontMatrix = node.data.getFontMetrics(node.data.getFont());
+        Font font = node.data.getFont();
+        fontMatrix = getFontMetrics(font);
         return Math.max(Node.TEXT_WIDTH, fontMatrix.stringWidth(node.data.getText()) + 20);
     }
 
