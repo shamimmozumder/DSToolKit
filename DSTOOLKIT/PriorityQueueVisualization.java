@@ -1,231 +1,491 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.*;
 
-class Node {
+class PNode {
+
     int data;
-    Node next;
+    PNode next;
 
-    public Node(int data) {
+    public PNode(int data)
+    {
         this.data = data;
         this.next = null;
     }
+
 }
 
+
 public class PriorityQueueVisualization extends JFrame {
-    private Node head;  // Front of the queue
-    private Node tail;  // Rear of the queue
+
+    private PNode head;
+    private PNode tail;
+
     private JPanel queuePanel;
+
     private JTextField input;
+    private JTextField capacityField;
+
     private JLabel statusbar;
-    private BoxLayout boxLayout;
+
+    private Font f;
+
+    private int capacity = Integer.MAX_VALUE;
+    private int size = 0;
+
+    private boolean smallToLarge = true;
+
 
     public PriorityQueueVisualization() {
+
         head = null;
         tail = null;
 
-        setTitle("Priority Queue Visualization ");
-        setSize(1000, 700);
+        setTitle("Priority Queue Visualization");
+
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
+
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLayout(new BorderLayout());
 
-       Font f = new Font("Arial", Font.BOLD, 24);
 
-        queuePanel = new JPanel();
-        boxLayout = new BoxLayout(queuePanel, BoxLayout.X_AXIS);
-        queuePanel.setLayout(boxLayout);
-        queuePanel.setBorder(BorderFactory.createLineBorder(Color.BLUE, 2));
+        f = new Font("Arial", Font.BOLD, 26);
+
+
+        queuePanel = new JPanel(null);
+
+        queuePanel.setBackground(new Color(235,250,255));
+
 
         input = new JTextField(6);
-        input.setHorizontalAlignment(JTextField.CENTER);
         input.setFont(f);
 
-        // Enqueue operation
+        capacityField = new JTextField(5);
+        capacityField.setFont(f);
+
+
+        // PRIORITY ORDER RADIO BUTTON
+
+        JRadioButton smallFirst = new JRadioButton("Small → Large", true);
+        JRadioButton largeFirst = new JRadioButton("Large → Small");
+
+        ButtonGroup group = new ButtonGroup();
+
+        group.add(smallFirst);
+        group.add(largeFirst);
+
+
+        smallFirst.addActionListener(e -> smallToLarge = true);
+        largeFirst.addActionListener(e -> smallToLarge = false);
+
+
+        JButton setCapacity = new JButton("Set Capacity");
+
+        setCapacity.setFont(f);
+
+        setCapacity.addActionListener(e -> {
+
+            try{
+
+                capacity = Integer.parseInt(capacityField.getText());
+
+                statusbar.setText("Capacity set: " + capacity);
+
+            }
+
+            catch(Exception ex){
+
+                JOptionPane.showMessageDialog(this,"Invalid capacity");
+
+            }
+
+        });
+
+
+
         JButton enqueue = new JButton("Enqueue");
+
         enqueue.setFont(f);
-        enqueue.setBackground(Color.CYAN);
-        enqueue.setForeground(Color.BLACK);
 
-        enqueue.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) 
-            {
-                enqueue();
-            }
-        });
+        enqueue.setBackground(new Color(120,255,120));
 
-        // Dequeue operation
+        enqueue.addActionListener(e -> enqueue());
+
+
         JButton dequeue = new JButton("Dequeue");
+
         dequeue.setFont(f);
-        dequeue.setBackground(Color.ORANGE);
-        dequeue.setForeground(Color.BLACK);
 
-        dequeue.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) 
-            {
-                dequeue();
-            }
-        });
-        
-        //Back Button
-        JButton back= new JButton("Back");
+        dequeue.setBackground(new Color(255,170,170));
+
+        dequeue.addActionListener(e -> dequeue());
+
+
+        JButton back = new JButton("Back");
+
         back.setFont(f);
-        back.setBackground(Color.red);
-        back.setForeground(Color.ORANGE);
 
-        back.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e)
-            {
-                if(e.getSource()==back)
-                {
-                    dispose();
-                    myQueue mq = new myQueue();
-                    mq.setVisible(true);  
-                }  
-            }
-           });
+        back.setBackground(Color.RED);
 
-        // Status bar to show messages
-        statusbar = new JLabel("Queue is empty");
-        statusbar.setOpaque(true);
-        statusbar.setBackground(Color.LIGHT_GRAY);
-        statusbar.setForeground(Color.BLACK);
+        back.setForeground(Color.WHITE);
+
+        back.addActionListener(e -> {
+
+            dispose();
+
+            new myQueue().setVisible(true);
+
+        });
+
+
+        statusbar = new JLabel("Queue Empty");
+
         statusbar.setFont(f);
 
-        // Control panel setup
-        JPanel controlPanel = new JPanel();
-        JLabel valueLabel = new JLabel("Value:");
-        valueLabel.setFont(f);
-        controlPanel.add(valueLabel);
+        statusbar.setOpaque(true);
 
+        statusbar.setBackground(Color.BLACK);
+
+        statusbar.setForeground(Color.YELLOW);
+
+
+        JPanel controlPanel = new JPanel();
+
+        controlPanel.add(new JLabel("Capacity"));
+        controlPanel.add(capacityField);
+        controlPanel.add(setCapacity);
+
+        controlPanel.add(smallFirst);
+        controlPanel.add(largeFirst);
+
+        controlPanel.add(new JLabel("Value"));
         controlPanel.add(input);
+
         controlPanel.add(enqueue);
         controlPanel.add(dequeue);
         controlPanel.add(back);
 
-        add(controlPanel, BorderLayout.NORTH);
-        JScrollPane scrollPane = new JScrollPane(queuePanel);
-        add(scrollPane, BorderLayout.CENTER);
-        add(statusbar, BorderLayout.SOUTH);
+
+        add(controlPanel,BorderLayout.NORTH);
+        add(queuePanel,BorderLayout.CENTER);
+        add(statusbar,BorderLayout.SOUTH);
+
         setVisible(true);
+
     }
 
-    private void enqueue() 
+
+
+    private JLabel createNodeLabel(int value)
     {
+
+        JLabel label = new JLabel(String.valueOf(value),SwingConstants.CENTER);
+
+        label.setFont(f);
+
+        label.setOpaque(true);
+
+        label.setBackground(new Color(
+                (int)(Math.random()*200),
+                (int)(Math.random()*200),
+                (int)(Math.random()*200)
+        ));
+
+        label.setBorder(BorderFactory.createLineBorder(Color.BLACK,3,true));
+
+        label.setSize(80,80);
+
+        return label;
+
+    }
+
+
+
+    private void enqueue()
+    {
+
         try {
+
+            if(size >= capacity)
+            {
+                statusbar.setText("Queue Full");
+                return;
+            }
+
             int value = Integer.parseInt(input.getText());
-            Node newNode = new Node(value);
 
-            // Inserting in sorted order based on priority (lower values have higher priority)
-            if (head == null || value < head.data) 
+            PNode newNode = new PNode(value);
+
+
+            if(head == null ||
+                    (smallToLarge && value < head.data) ||
+                    (!smallToLarge && value > head.data))
+
             {
+
                 newNode.next = head;
+
                 head = newNode;
-            } 
-            else 
+
+            }
+
+            else
+
             {
-                Node temp = head;
-                while (temp.next != null && temp.next.data < value) //maze valuee add krbo(insert position)
+
+                PNode temp = head;
+
+                while(temp.next != null &&
+                        ((smallToLarge && temp.next.data < value) ||
+                         (!smallToLarge && temp.next.data > value)))
+
                 {
+
                     temp = temp.next;
+
                 }
+
                 newNode.next = temp.next;
+
                 temp.next = newNode;
+
             }
 
-            // Update the tail reference
-            if (newNode.next == null) 
-            {
+
+            if(newNode.next == null)
+
                 tail = newNode;
+
+
+            size++;
+
+            animateInsert(value);
+
+            statusbar.setText("Inserted: " + value);
+
+        }
+
+        catch(Exception e)
+
+        {
+
+            JOptionPane.showMessageDialog(this,"Enter valid integer");
+
+        }
+
+
+        input.setText("");
+
+    }
+
+
+
+    private void dequeue()
+    {
+
+        if(head == null)
+
+        {
+
+            JOptionPane.showMessageDialog(this,"Queue Empty");
+
+            return;
+
+        }
+
+
+        animateDelete();
+
+    }
+
+
+
+    private void animateInsert(int value)
+    {
+
+        JLabel node = createNodeLabel(value);
+
+        int startX = getWidth();
+
+        int y = 250;
+
+        node.setLocation(startX,y);
+
+        queuePanel.add(node);
+
+
+        Timer timer = new Timer(10,null);
+
+
+        timer.addActionListener(new ActionListener(){
+
+            int x = startX;
+
+
+            public void actionPerformed(ActionEvent e){
+
+                x -= 15;
+
+                node.setLocation(x,y);
+
+
+                if(x <= 100)
+
+                {
+
+                    timer.stop();
+
+                    updateQueuePanel();
+
+                }
+
             }
 
-            updateQueuePanel();
-            statusbar.setText("Enqueued: " + value);
-        } 
-        catch (Exception e) 
-        {
-            JOptionPane.showMessageDialog(this, "Enter a valid integer", "Error", JOptionPane.ERROR_MESSAGE);
-        }
-        input.setText("");
+        });
+
+
+        timer.start();
+
     }
 
-    private void dequeue() 
+
+
+    private void animateDelete()
     {
-        if (head == null) 
-        {
-            statusbar.setText("Queue is empty");
-            JOptionPane.showMessageDialog(this, "Queue is empty", "Error", JOptionPane.ERROR_MESSAGE);
-        } else 
-        {
-            int value = head.data;
-            head = head.next;
-            
-            updateQueuePanel();
-            statusbar.setText("Dequeued: " + value);
-        }
+
+        Component comp = queuePanel.getComponent(0);
+
+
+        Timer timer = new Timer(10,null);
+
+
+        timer.addActionListener(new ActionListener(){
+
+            int x = comp.getX();
+
+
+            public void actionPerformed(ActionEvent e){
+
+                x -= 15;
+
+                comp.setLocation(x,comp.getY());
+
+
+                if(x < -120)
+
+                {
+
+                    timer.stop();
+
+                    int value = head.data;
+
+                    head = head.next;
+
+                    size--;
+
+                    updateQueuePanel();
+
+                    statusbar.setText("Deleted: "+value);
+
+                }
+
+            }
+
+        });
+
+
+        timer.start();
+
     }
 
-    // Update the visualization panel with the current state of the queue
+
+
     private void updateQueuePanel()
+
     {
+
         queuePanel.removeAll();
 
-        if (head == null) {
-            queuePanel.revalidate();
-            queuePanel.repaint();
-            return;
-        }
+        PNode current = head;
 
-        Node temp = head;
+        int x = 100;
 
-        while (temp != null) 
+
+        while(current != null)
+
         {
-            Font f = new Font("Arial", Font.BOLD, 24);
-            // Add queue elements
-            JLabel label = new JLabel(String.valueOf(temp.data));
-            label.setBorder(BorderFactory.createLineBorder(Color.ORANGE, 10, true));
-            label.setFont(f);
-            label.setOpaque(true);
 
-            if (temp == head && temp == tail) 
+            JLabel node = createNodeLabel(current.data);
+
+            node.setLocation(x,250);
+
+            queuePanel.add(node);
+
+
+            if(current == head)
+
             {
-                // If the node is both front and rear (only one element)
-                label.setBackground(Color.WHITE);
-                label.setText("Front&Rear: " + temp.data);
-            } 
-            else if (temp == head) 
-            {
-                // If the node is the front of the queue
-                label.setBackground(Color.WHITE);
-                label.setText("Front: " + temp.data);
-            } 
-            else if (temp == tail) 
-            {
-                // If the node is the rear of the queue
-                label.setBackground(Color.WHITE);
-                label.setText("Rear: " + temp.data);
-            } 
-            else 
-            {
-                label.setBackground(Color.WHITE);
+
+                JLabel frontLabel = new JLabel("↑ Front");
+
+                frontLabel.setFont(new Font("Arial",Font.BOLD,18));
+
+                frontLabel.setBounds(x,210,80,30);
+
+                queuePanel.add(frontLabel);
+
             }
 
-            queuePanel.add(label);
-            queuePanel.add(Box.createHorizontalStrut(20));
 
-            temp = temp.next;
+            if(current.next == null)
+
+            {
+
+                JLabel rearLabel = new JLabel("↑ Rear");
+
+                rearLabel.setFont(new Font("Arial",Font.BOLD,18));
+
+                rearLabel.setBounds(x,340,80,30);
+
+                queuePanel.add(rearLabel);
+
+            }
+
+
+            JLabel arrow = new JLabel("→");
+
+            arrow.setFont(new Font("Arial",Font.BOLD,40));
+
+            arrow.setLocation(x+80,260);
+
+            arrow.setSize(40,40);
+
+            queuePanel.add(arrow);
+
+
+            x += 120;
+
+            current = current.next;
+
         }
 
-        queuePanel.revalidate();
+
+        if(head == null)
+
+            statusbar.setText("Queue Empty");
+
+
         queuePanel.repaint();
+
     }
 
-    public static void main(String[] args) {
-        PriorityQueueVisualization pv= new PriorityQueueVisualization();
-        pv.setVisible(true);
-       
-        
+
+
+    public static void main(String[] args)
+
+    {
+
+        new PriorityQueueVisualization();
+
     }
+
 }
