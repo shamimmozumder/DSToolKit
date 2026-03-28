@@ -1,263 +1,526 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.*;
 
-class Node 
+class QNode
 {
     int val;
-    Node next;
+    QNode next;
 
-    public Node(int val) 
+    public QNode(int val)
     {
         this.val = val;
         this.next = null;
     }
 }
 
-class LinkedListQueue 
+
+class LinkedListQueue
 {
-    private int sz = 0;
-    private Node head, tail;
 
-    public LinkedListQueue() 
+    private int size = 0;
+    private int capacity = Integer.MAX_VALUE;
+
+    private QNode head, tail;
+
+
+    public void setCapacity(int cap)
     {
-        head = null;
-        tail = null;
+        capacity = cap;
     }
 
-    public void enqueue(int value) 
+
+    public boolean isFull()
     {
-        sz++;
-        Node newNode = new Node(value);
-        if (tail == null) 
-        {
-            head = newNode;
-            tail = newNode;
-        } 
-        else 
-        {
-            tail.next = newNode;
-            tail = newNode;
-        }
+        return size >= capacity;
     }
 
-    public int dequeue() 
+
+    public boolean isEmpty()
     {
-        if (head == null) 
+        return size == 0;
+    }
+
+
+    public int getSize()
+    {
+        return size;
+    }
+
+
+    public void enqueue(int value)
+    {
+
+        if(isFull())
+            throw new IllegalStateException("Queue Full");
+
+
+        QNode node = new QNode(value);
+
+
+        if(head == null)
+            head = tail = node;
+
+        else
         {
-            throw new IllegalStateException("Queue is Empty");
+            tail.next = node;
+            tail = node;
         }
-        sz--;
-        int value = head.val;
+
+
+        size++;
+
+    }
+
+
+
+    public int dequeue()
+    {
+
+        if(isEmpty())
+            throw new IllegalStateException("Queue Empty");
+
+
+        int val = head.val;
+
+
         head = head.next;
-        if (head == null) 
-        {
+
+
+        if(head == null)
             tail = null;
-        }
-        return value;
+
+
+        size--;
+
+
+        return val;
+
     }
 
-    public int getSize() 
-    {
-        return sz;
-    }
 
-    public boolean isEmpty() 
-    {
-        return head == null;
-    }
 
-    public Node getFront() 
+    public QNode getFront()
     {
         return head;
     }
 
-    public Node getRear() 
+
+    public QNode getRear()
     {
         return tail;
     }
+
+
 }
 
-public class QueueVisualization extends JFrame 
-{
-    private LinkedListQueue queue;
-    private JPanel queuePanel;
-    private JTextField input;
-    private JLabel statusbar;
-    private Font f;
-    private BoxLayout Box;
 
-    public QueueVisualization() 
+
+public class QueueVisualization extends JFrame
+{
+
+    private LinkedListQueue queue;
+
+    private JPanel queuePanel;
+
+    private JTextField input;
+
+    private JTextField sizeInput;
+
+    private JLabel statusbar;
+
+    private Font f;
+
+
+    public QueueVisualization()
     {
+
         queue = new LinkedListQueue();
 
         setTitle("Queue Visualization");
-        setSize(1000, 700);
+
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
+
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setVisible(true);
 
-        f = new Font("Arial", Font.BOLD + Font.ITALIC, 24);
 
-        queuePanel = new JPanel();
-        //Box = new BoxLayout(queuePanel, BoxLayout.X_AXIS);
-        //queuePanel.setLayout(Box);
-        queuePanel.setLayout(new BoxLayout(queuePanel, BoxLayout.X_AXIS));
-        queuePanel.setBorder(BorderFactory.createLineBorder(Color.blue));
+        f = new Font("Arial", Font.BOLD, 26);
+
+
+        queuePanel = new JPanel(null);
+
+        queuePanel.setBackground(new Color(235,250,255));
+
 
         input = new JTextField(6);
-        input.setHorizontalAlignment(JTextField.CENTER);
         input.setFont(f);
 
-        // Enqueue operation
+        sizeInput = new JTextField(5);
+        sizeInput.setFont(f);
+
+
+        JButton setSize = new JButton("Set Size");
+
+        setSize.setBackground(Color.YELLOW);
+
+        setSize.setFont(f);
+
+
+        setSize.addActionListener(e -> {
+
+            try
+            {
+                int cap = Integer.parseInt(sizeInput.getText());
+
+                queue.setCapacity(cap);
+
+                statusbar.setText("Capacity set to: " + cap);
+            }
+
+            catch(Exception ex)
+            {
+                JOptionPane.showMessageDialog(this,"Invalid size");
+            }
+
+        });
+
+
+
         JButton enqueue = new JButton("Enqueue");
+
         enqueue.setFont(f);
-        enqueue.setForeground(Color.BLACK);
-        enqueue.setBackground(Color.CYAN);
 
-        enqueue.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) 
-            {
-                enqueue();
-            }
-        });
+        enqueue.setBackground(new Color(120,255,120));
 
-        // Dequeue operation
+        enqueue.addActionListener(e -> enqueue());
+
+
+
         JButton dequeue = new JButton("Dequeue");
+
         dequeue.setFont(f);
-        dequeue.setForeground(Color.BLACK);
-        dequeue.setBackground(Color.PINK);
 
-        dequeue.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) 
-            {
-                dequeue();
-            }
-        });
+        dequeue.setBackground(new Color(255,170,170));
 
-        // Back Operation
+        dequeue.addActionListener(e -> dequeue());
+
+
+        // BACK BUTTON (same logic as your previous code)
+
         JButton back = new JButton("Back");
+
         back.setFont(f);
-        back.setForeground(Color.ORANGE);
+
         back.setBackground(Color.RED);
 
-        back.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e)
-            {
-                if(e.getSource() == back)
-                {
-                    dispose();
-                    
-                     myQueue MQ = new myQueue();
-                     MQ.setVisible(true);
-                }   
-            }
+        back.setForeground(Color.WHITE);
+
+
+        back.addActionListener(e -> {
+
+            dispose();
+
+            new myQueue().setVisible(true);
+
         });
 
-        statusbar = new JLabel("Queue is empty");
+
+
+        statusbar = new JLabel("Queue Empty");
+
         statusbar.setOpaque(true);
-        statusbar.setBackground(Color.DARK_GRAY);
-        statusbar.setForeground(Color.RED);
+
+        statusbar.setBackground(Color.BLACK);
+
+        statusbar.setForeground(Color.YELLOW);
+
         statusbar.setFont(f);
 
+
         JPanel controlPanel = new JPanel();
-        JLabel value = new JLabel("Value:");
-        value.setFont(f);
-        controlPanel.add(value);
+
+        controlPanel.add(new JLabel("Capacity"));
+
+        controlPanel.add(sizeInput);
+
+        controlPanel.add(setSize);
+
+        controlPanel.add(new JLabel("Value"));
 
         controlPanel.add(input);
+
         controlPanel.add(enqueue);
+
         controlPanel.add(dequeue);
+
         controlPanel.add(back);
 
-        add(controlPanel, BorderLayout.NORTH);
-        JScrollPane jp = new JScrollPane(queuePanel);
-        add(jp, BorderLayout.CENTER);
-        add(statusbar, BorderLayout.SOUTH);
+
+        add(controlPanel,BorderLayout.NORTH);
+
+        add(queuePanel,BorderLayout.CENTER);
+
+        add(statusbar,BorderLayout.SOUTH);
+
+
         setVisible(true);
+
     }
 
-    private void enqueue() 
+
+
+    private JLabel createNodeLabel(int value)
     {
-        try 
+
+        JLabel label = new JLabel(String.valueOf(value),SwingConstants.CENTER);
+
+        label.setFont(f);
+
+        label.setOpaque(true);
+
+        label.setBackground(new Color(
+                (int)(Math.random()*200),
+                (int)(Math.random()*200),
+                (int)(Math.random()*200)
+        ));
+
+        label.setBorder(BorderFactory.createLineBorder(Color.BLACK,3,true));
+
+        label.setSize(80,80);
+
+        return label;
+
+    }
+
+
+
+    private void enqueue()
+    {
+
+        try
         {
+
             int value = Integer.parseInt(input.getText());
+
             queue.enqueue(value);
-            updateQueuePanel();
-            statusbar.setText("Enqueued: " + value);
-        } 
-        catch (Exception e) 
-        {
-            JOptionPane.showMessageDialog(this, "Enter a valid integer", "Error", JOptionPane.ERROR_MESSAGE);
+
+            animateInsert(value);
+
         }
+
+        catch(Exception e)
+        {
+            JOptionPane.showMessageDialog(this,e.getMessage());
+        }
+
         input.setText("");
+
     }
 
-    private void dequeue() 
+
+
+    private void dequeue()
     {
-        if (queue.isEmpty()) 
+
+        if(queue.isEmpty())
         {
-            statusbar.setText("Queue is empty");
-            JOptionPane.showMessageDialog(this, "Queue is empty", "Error", JOptionPane.ERROR_MESSAGE);
-        } 
-        else 
-        {
-            int value = queue.dequeue();
-            updateQueuePanel();
-            statusbar.setText("Dequeued: " + value);
+
+            JOptionPane.showMessageDialog(this,"Queue Empty");
+
+            return;
+
         }
+
+        animateDelete();
+
     }
 
-    private void updateQueuePanel() 
+
+
+    private void animateInsert(int value)
     {
-        queuePanel.removeAll();
-        Node current = queue.getFront();
-        while (current != null) 
+
+        JLabel node = createNodeLabel(value);
+
+        int startX = getWidth();
+
+        int y = 250;
+
+        node.setLocation(startX,y);
+
+        queuePanel.add(node);
+
+
+        Timer timer = new Timer(10,null);
+
+
+        timer.addActionListener(new ActionListener()
         {
-            JLabel label = new JLabel(String.valueOf(current.val));
-            label.setFont(f);
-            label.setOpaque(true);
-            label.setBackground(Color.WHITE);
 
-            if (current == queue.getFront() && current==queue.getRear()) 
-           
+            int x = startX;
+
+
+            public void actionPerformed(ActionEvent e)
             {
-                label.setText("Front&Rear: " + current.val);
-                label.setBackground(Color.WHITE);
-            } 
-            else if(current== queue.getFront())
-            {
-                label.setText("Front: " + current.val);
-                label.setBackground(Color.WHITE);
-            }
-            else if (current == queue.getRear()) 
-            {
-                label.setText("Rear: " + current.val);
-                label.setBackground(Color.WHITE);
-            }
-            else 
-            {
-                label.setBackground(Color.WHITE);
+
+                x -= 15;
+
+                node.setLocation(x,y);
+
+
+                if(x <= 100 + queue.getSize()*90)
+                {
+
+                    timer.stop();
+
+                    updateQueuePanel();
+
+                }
+
             }
 
-            label.setBorder(BorderFactory.createLineBorder(Color.MAGENTA, 13, true));
-            queuePanel.add(label);
-            queuePanel.add(javax.swing.Box.createHorizontalStrut(20));
+        });
+
+
+        timer.start();
+
+    }
+
+
+
+    private void animateDelete()
+    {
+
+        Component comp = queuePanel.getComponent(0);
+
+
+        Timer timer = new Timer(10,null);
+
+
+        timer.addActionListener(new ActionListener()
+        {
+
+            int x = comp.getX();
+
+
+            public void actionPerformed(ActionEvent e)
+            {
+
+                x -= 15;
+
+                comp.setLocation(x,comp.getY());
+
+
+                if(x < -120)
+                {
+
+                    timer.stop();
+
+                    queue.dequeue();
+
+                    updateQueuePanel();
+
+                }
+
+            }
+
+        });
+
+
+        timer.start();
+
+    }
+
+
+
+    private void updateQueuePanel()
+    {
+
+        queuePanel.removeAll();
+
+        QNode current = queue.getFront();
+
+        int x = 100;
+
+
+        while(current != null)
+        {
+
+            JLabel node = createNodeLabel(current.val);
+
+            node.setLocation(x,250);
+
+            queuePanel.add(node);
+
+
+            // FRONT POINTER
+
+            if(current == queue.getFront())
+            {
+
+                JLabel frontLabel = new JLabel("↑ Front");
+
+                frontLabel.setFont(new Font("Arial",Font.BOLD,18));
+
+                frontLabel.setBounds(x,210,80,30);
+
+                queuePanel.add(frontLabel);
+
+            }
+
+
+            // REAR POINTER
+
+            if(current == queue.getRear())
+            {
+
+                JLabel rearLabel = new JLabel("↑ Rear");
+
+                rearLabel.setFont(new Font("Arial",Font.BOLD,18));
+
+                rearLabel.setBounds(x,340,80,30);
+
+                queuePanel.add(rearLabel);
+
+            }
+
+
+            JLabel arrow = new JLabel("→");
+
+            arrow.setFont(new Font("Arial",Font.BOLD,40));
+
+            arrow.setLocation(x+80,260);
+
+            arrow.setSize(40,40);
+
+            queuePanel.add(arrow);
+
+
+            x += 120;
 
             current = current.next;
+
         }
 
-        queuePanel.revalidate();
+
+        if(queue.isEmpty())
+            statusbar.setText("Queue Empty");
+
+        else if(queue.isFull())
+            statusbar.setText("Queue Full");
+
+
         queuePanel.repaint();
+
     }
 
-    public static void main(String[] args) 
+
+
+    public static void main(String[] args)
     {
-        QueueVisualization qv = new QueueVisualization();
-        qv.setVisible(true);
 
-        
+        new QueueVisualization();
+
     }
+
 }
